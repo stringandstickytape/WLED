@@ -94,7 +94,7 @@
  #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2001151
+#define VERSION 2001191
 
 char versionString[] = "0.9.0-b2";
 
