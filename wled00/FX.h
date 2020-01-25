@@ -566,7 +566,7 @@ class WS2812FX {
       mode_popcorn(void),
       mode_drip(void),
       mode_plasma(void),
-      mode_percent(void);
+      mode_percent(void),
       mode_usermod(void);
       
 
