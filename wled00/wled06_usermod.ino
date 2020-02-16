@@ -163,6 +163,8 @@ void userSetup()
   if(eepromU.userVar0 == 0) {
     if(ledCount <64)
       zone_count = 8;
+    else if(ledCount < 80)
+      zone_count = 64;
     else zone_count = 64;
     //if(zone_count > 80) zone_count = 80;
   } else {
@@ -406,7 +408,7 @@ void handleRequest(LifxPacket &request) {
         for (i = 0; i < reqData[7] ; i++) {
           Udp.read(zones[index + i].raw, 8);
           Serial.println("!: "+String(zones[index+i].dur));
-          if(zones[index+i].dur == 0) zones[index+i].dur = 1;
+          if(zones[index+i].dur == 0) zones[index+i].dur = 1000;
         }
         setLight();
         if (request.ack_required) {
