@@ -20,12 +20,11 @@
 #include "wled06_usermod.h"
 
 //You need to choose some of these features to disable:
-//LIFX usermod needs at least some of this memory on ESP8266 NodeMCU
 #define WLED_DISABLE_ALEXA       //saves 11kb
 #define WLED_DISABLE_BLYNK       //saves 6kb
 #define WLED_DISABLE_CRONIXIE    //saves 3kb
 #define WLED_DISABLE_HUESYNC     //saves 4kb
-#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 25kb (!)
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 

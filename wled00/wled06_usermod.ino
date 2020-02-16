@@ -225,6 +225,7 @@ void handleRequest(LifxPacket &request) {
         if (power_status == 0) {
           bri = 0;
           effectCurrent = prevMode;
+          arlsLock(0,REALTIME_MODE_GENERIC);
           colorUpdated(6);
         }
         else {
@@ -233,7 +234,7 @@ void handleRequest(LifxPacket &request) {
           setLight();
           bri = 255;
           prevMode == strip.getMode();
-          effectCurrent = FX_MODE_USERMOD;
+          arlsLock(65000,REALTIME_MODE_GENERIC);
           colorUpdated(6);
           
         }
@@ -561,7 +562,7 @@ void userLoop()
 
   if (power_status == 65535) {
     strip.show();
-    //strip.unlockAll();
+    arlsLock(65000,REALTIME_MODE_GENERIC);
     colorUpdated(5);
   }
 

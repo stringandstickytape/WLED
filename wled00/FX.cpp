@@ -997,12 +997,6 @@ uint16_t WS2812FX::mode_halloween(void) {
   return running(PURPLE, ORANGE);
 }
 
-/*
- * Usermod-controlled pixels.
- */
-uint16_t WS2812FX::mode_usermod(void) {
-	return 500;
-}
 
 /*
  * Random colored pixels running.
