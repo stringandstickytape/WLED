@@ -60,8 +60,12 @@ void userLoop() {}
 #include <WiFiUdp.h>
 #include <SPI.h>
 
-//#include <ESP8266WiFi.h>
-#include <WiFi.h>
+#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+  #include <WiFi.h>
+#else 
+  #include <ESP8266WiFi.h>
+#endif
+
 
 #include <EEPROM.h>
 
