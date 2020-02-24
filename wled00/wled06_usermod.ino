@@ -59,7 +59,10 @@ void userLoop() {}
 
 #include <WiFiUdp.h>
 #include <SPI.h>
-#include <ESP8266WiFi.h>
+
+//#include <ESP8266WiFi.h>
+#include <WiFi.h>
+
 #include <EEPROM.h>
 
 #define EEPROM_OFFSET 2750
@@ -158,6 +161,7 @@ void sendLightStateResponse(LifxPacket &request, LifxPacket &response, uint8_t r
 //gets called once at boot. Do all initialization that doesn't depend on network here
 void userSetup()
 {
+  
   lifxEeprom eepromU = readEEPROM();
 
   if(eepromU.userVar0 == 0) {

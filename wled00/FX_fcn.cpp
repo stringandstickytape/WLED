@@ -125,9 +125,12 @@ void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
       /* Set all the pixels in the group, ensuring _skipFirstMode is honored */
       bool reversed = reverseMode ^ IS_REVERSE;
       uint16_t realIndex = realPixelIndex(i);
+
       for (uint16_t j = 0; j < SEGMENT.grouping; j++) {
         int16_t indexSet = realIndex + (reversed ? -j : j);
-        if (indexSet >= SEGMENT.start && indexSet < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
+        int16_t indexSetRev = indexSet;
+        if (reverseMode) indexSetRev = _length - 1 - indexSet;
+        if (indexSetRev >= SEGMENT.start && indexSetRev < SEGMENT.stop) bus->SetPixelColor(indexSet + skip, col);
       }
     } else { //live data, etc.
       if (reverseMode) i = _length - 1 - i;
@@ -691,6 +694,7 @@ CRGB WS2812FX::col_to_crgb(uint32_t color)
   return fastled_col;
 }
 
+TDynamicRGBGradientPalette_byte * b;
 
 /*
  * FastLED palette modes helper function. Limitation: Due to memory reasons, multiple active segments with FastLED will disable the Palette transitions
@@ -704,6 +708,53 @@ void WS2812FX::handle_palette(void)
   if (SEGMENT.mode == FX_MODE_GLITTER && paletteIndex == 0) paletteIndex = 11;
   if (SEGMENT.mode >= FX_MODE_METEOR && paletteIndex == 0) paletteIndex = 4;
   
+    if(b) free(b);
+
+    b = (TDynamicRGBGradientPalette_byte*)(malloc(20 * sizeof(TDynamicRGBGradientPalette_byte)));
+
+    b[0]=0;
+    b[1]=0x24;
+    b[2]=0x7b;
+    b[3]=0xa0;
+    b[4]=0x3f;
+    b[5]=0x70;
+    b[6]=0xc1;
+    b[7]=0xb3;
+    b[8]=0x7f;
+    b[9]=0xb2;
+    b[10]=0xdb;
+    b[11]=0xbf;
+    b[12]=0xaf;
+    b[13]=0xf3;
+    b[14]=0xff;
+    b[15]=0xbd;
+    b[16]=0xff;
+    b[17]=0xff;
+    b[18]=0x16;
+    b[19]=0x54;
+
+    /*b[0] = 0;
+    b[1]=0xff;
+    b[2]=0x00;
+    b[3]=0x00;
+    b[4]=0x3f;
+    b[5]=0x00;
+    b[6]=0xff;
+    b[7]=0x00;
+    b[8]=0x7f;
+    b[9]=0x00;
+    b[10]=0x00;
+    b[11]=0xff;
+    b[12]=0xaf;
+    b[13]=0x00;
+    b[14]=0xff;
+    b[15]=0xff;
+    b[16]=0xff;
+    b[17]=0xff;
+    b[18]=0xff;
+    b[19]=0x00;*/
+
+
   switch (paletteIndex)
   {
     case 0: {//default palette. Differs depending on effect
@@ -770,7 +821,16 @@ void WS2812FX::handle_palette(void)
     case 11: //Rainbow colors
       targetPalette = RainbowColors_p; break;
     case 12: //Rainbow stripe colors
-      targetPalette = RainbowStripeColors_p; break;
+      //targetPalette = RainbowStripeColors_p; break;
+    //case 50:
+      {
+        CRGBPalette16 pp = CRGBPalette16();
+        pp.loadDynamicGradientPalette(b);
+        targetPalette = pp;
+        
+        //palettes[0];
+      }
+       break;
     default: //progmem palettes
       targetPalette = gGradientPalettes[constrain(SEGMENT.palette -13, 0, gGradientPaletteCount -1)];
   }

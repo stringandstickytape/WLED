@@ -2134,7 +2134,7 @@ typedef struct Ripple {
   uint16_t pos;
 } ripple;
 
-uint16_t WS2812FX::mode_ripple()
+uint16_t WS2812FX::ripple_base(bool rainbow)
 {
   uint16_t maxRipples = 1 + (SEGLEN >> 2);
   if (maxRipples > 100) maxRipples = 100;
@@ -2144,8 +2144,25 @@ uint16_t WS2812FX::mode_ripple()
  
   Ripple* ripples = reinterpret_cast<Ripple*>(SEGENV.data);
 
-  fill(SEGCOLOR(1));
-
+  // ranbow background or chosen background, all very dim.
+  if (rainbow) {
+    if (SEGENV.call ==0) {
+      SEGENV.aux0 = random8();
+      SEGENV.aux1 = random8();
+    }
+    if (SEGENV.aux0 == SEGENV.aux1) {
+      SEGENV.aux1 = random8();
+    }
+    else if (SEGENV.aux1 > SEGENV.aux0) {
+      SEGENV.aux0++;
+    } else {
+      SEGENV.aux0--;
+    }
+    fill(color_blend(color_wheel(SEGENV.aux0),BLACK,235));
+  } else {
+    fill(SEGCOLOR(1));
+  }
+  
   //draw wave
   for (uint16_t i = 0; i < maxRipples; i++)
   {
@@ -2188,6 +2205,15 @@ uint16_t WS2812FX::mode_ripple()
   }
   return FRAMETIME;
 }
+
+uint16_t WS2812FX::mode_ripple(void) {
+  return ripple_base(false);
+}
+
+uint16_t WS2812FX::mode_ripple_rainbow(void) {
+  return ripple_base(true);
+}
+
 
 
 //  TwinkleFOX by Mark Kriegsman: https://gist.github.com/kriegsman/756ea6dcae8e30845b5a
@@ -3093,4 +3119,44 @@ uint16_t WS2812FX::mode_percent(void) {
   }
 
  	return FRAMETIME;
+}
+
+uint16_t WS2812FX::mode_heartbeat(void) {
+  static unsigned long lastBeat = 0;
+  static bool secondBeatActive = false;
+
+  uint8_t bpm = 40 + (SEGMENT.speed >> 4);
+  uint32_t msPerBeat = (60000 / bpm);
+  uint32_t secondBeat = (msPerBeat / 3);
+
+  // Get and translate the segment's size option
+  uint8_t size = 2 << ((SEGMENT.options >> 1) & 0x03); // 2,4,8,16
+
+  // copy pixels from the middle of the segment to the edges
+  uint16_t bytesPerPixelBlock = size * 4;
+  uint16_t centerOffset = (SEGLEN / 2) * 4;
+  uint16_t byteCount = centerOffset - bytesPerPixelBlock;
+  memmove(bus->GetPixels(), bus->GetPixels() + bytesPerPixelBlock, byteCount);
+  memmove(bus->GetPixels() + centerOffset + bytesPerPixelBlock, bus->GetPixels() + centerOffset, byteCount);
+
+  fade_out(255 - SEGMENT.intensity);
+
+  unsigned long beatTimer = millis() - lastBeat;
+  if((beatTimer > secondBeat) && !secondBeatActive) { // time for the second beat?
+    uint16_t startLed = (SEGLEN / 2) - size;
+    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
+      setPixelColor(i, SEGMENT.colors[0]);
+    }
+    secondBeatActive = 1;
+  }
+  if(beatTimer > msPerBeat) { // time to reset the beat timer?
+    uint16_t startLed = (SEGLEN / 2) - size;
+    for (uint16_t i = startLed; i < startLed + (size * 2); i++) {
+      setPixelColor(i, SEGMENT.colors[0]);
+    }
+    secondBeatActive = 0;
+    lastBeat = millis();
+  }
+
+  return FRAMETIME;
 }

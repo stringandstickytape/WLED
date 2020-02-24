@@ -573,6 +573,8 @@ DEFINE_GRADIENT_PALETTE( Aurora_gp ) {
   200,   0,135,  7,
   255,   1,  5, 45};//deep blue
   
+  
+
 
 // Single array of defined cpt-city color palettes.
 // This will let us programmatically choose one based on
@@ -623,7 +625,7 @@ const TProgmemRGBGradientPalettePtr gGradientPalettes[] = {
   C9_gp,                        //48-35 C9
   Sakura_gp,                    //49-36 Sakura
   Aurora_gp,                    //50-37 Aurora
-};
+  };
 
 
 // Count of how many cpt-city gradients are defined:
