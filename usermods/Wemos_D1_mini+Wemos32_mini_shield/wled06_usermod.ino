@@ -1,11 +1,20 @@
 #include <U8x8lib.h> // from https://github.com/olikraus/u8g2/
 #include <DallasTemperature.h> //Dallastemperature sensor
-//The SCL and SDA pins are defined here. 
-//Lolin32 boards use SCL=5 SDA=4 
-#define U8X8_PIN_SCL 5
-#define U8X8_PIN_SDA 4
+#ifdef ARDUINO_ARCH_ESP32 //ESP32 boards
+uint8_t SCL_PIN = 22; 
+uint8_t SDA_PIN = 21; 
+OneWire oneWire(23);
+#else //ESP8266 boards
+uint8_t SCL_PIN = 5;
+uint8_t SDA_PIN = 4;
+OneWire oneWire(13);
+#endif
+//The SCL and SDA pins are defined here.
+//ESP8266 Wemos D1 mini board use SCL=5 SDA=4 while ESP32 Wemos32 mini board use SCL=22 SDA=21
+#define U8X8_PIN_SCL SCL_PIN
+#define U8X8_PIN_SDA SDA_PIN
+
 // Dallas sensor
-OneWire oneWire(13); 
 DallasTemperature sensor(&oneWire);
 long temptimer = millis();
 long lastMeasure = 0;
@@ -25,8 +34,8 @@ U8X8_SSD1306_128X32_UNIVISION_HW_I2C u8x8(U8X8_PIN_NONE, U8X8_PIN_SCL, U8X8_PIN_
 void userSetup() {
   sensor.begin(); //Start Dallas temperature sensor
   u8x8.begin();
-  //u8x8.setFlipMode(1); //Uncoment if using WLED Wemos shield 
   u8x8.setPowerSave(0);
+  u8x8.setFlipMode(1);
   u8x8.setContrast(10); //Contrast setup will help to preserve OLED lifetime. In case OLED need to be brighter increase number up to 255
   u8x8.setFont(u8x8_font_chroma48medium8_r);
   u8x8.drawString(0, 0, "Loading...");

@@ -32,9 +32,9 @@
 
 void WS2812FX::init(bool supportWhite, uint16_t countPixels, bool skipFirst)
 {
-  if (supportWhite == _rgbwMode && countPixels == _length) return;
+  if (supportWhite == _useRgbw && countPixels == _length) return;
   RESET_RUNTIME;
-  _rgbwMode = supportWhite;
+  _useRgbw = supportWhite;
   _skipFirstMode = skipFirst;
   _length = countPixels;
 
@@ -65,6 +65,7 @@ void WS2812FX::service() {
     {
       if(nowUp > SEGENV.next_time || _triggered || (doShow && SEGMENT.mode == 0)) //last is temporary
       {
+        if (SEGMENT.grouping == 0) SEGMENT.grouping = 1; //sanity check
         _virtualSegmentLength = SEGMENT.virtualLength();
         doShow = true;
         handle_palette();
@@ -106,6 +107,20 @@ uint16_t WS2812FX::realPixelIndex(uint16_t i) {
 
 void WS2812FX::setPixelColor(uint16_t i, byte r, byte g, byte b, byte w)
 {
+  //auto calculate white channel value if enabled
+  if (_useRgbw) {
+    if (rgbwMode == RGBW_MODE_AUTO_BRIGHTER || (w == 0 && (rgbwMode == RGBW_MODE_DUAL || rgbwMode == RGBW_MODE_LEGACY)))
+    {
+      //white value is set to lowest RGB channel
+      //thank you to @Def3nder!
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    } else if (rgbwMode == RGBW_MODE_AUTO_ACCURATE && w == 0)
+    {
+      w = r < g ? (r < b ? r : b) : (g < b ? g : b);
+      r -= w; g -= w; b -= w;
+    }
+  }
+  
   RgbwColor col;
   switch (colorOrder)
   {
@@ -256,7 +271,7 @@ void WS2812FX::show(void) {
     }
 
 
-    if (_rgbwMode) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
+    if (_useRgbw) //RGBW led total output with white LEDs enabled is still 50mA, so each channel uses less
     {
       powerSum *= 3;
       powerSum = powerSum >> 2; //same as /= 4
@@ -870,6 +885,40 @@ bool WS2812FX::segmentsAreIdentical(Segment* a, Segment* b)
   //if (a->getOption(1) != b->getOption(1)) return false; //reverse
   return true;
 }
+
+#ifdef WLED_USE_ANALOG_LEDS     
+void WS2812FX::setRgbwPwm(void) {
+  uint32_t nowUp = millis(); // Be aware, millis() rolls over every 49 days
+  if (nowUp - _analogLastShow < MIN_SHOW_DELAY) return;
+
+  _analogLastShow = nowUp;
+
+  RgbwColor color = bus->GetPixelColorRgbw(0);
+  byte b = getBrightness();
+  if (color == _analogLastColor && b == _analogLastBri) return;
+  
+  // check color values for Warm / Cold white mix (for RGBW)  // EsplanexaDevice.cpp
+  #ifdef WLED_USE_5CH_LEDS
+    if        (color.R == 255 && color.G == 255 && color.B == 255 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0,                  0, color.W * b / 255);
+    } else if (color.R == 127 && color.G == 127 && color.B == 127 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 512, color.W * b / 255);
+    } else if (color.R ==   0 && color.G ==   0 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+    } else if (color.R == 130 && color.G ==  90 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255, color.W * b / 512);
+    } else if (color.R == 255 && color.G == 153 && color.B ==   0 && color.W == 255) {  
+      bus->SetRgbwPwm(0, 0, 0, color.W * b / 255,                  0);
+    } else {  // not only white colors
+      bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+    }
+  #else
+    bus->SetRgbwPwm(color.R * b / 255, color.G * b / 255, color.B * b / 255, color.W * b / 255);
+  #endif         
+}
+#else
+void WS2812FX::setRgbwPwm() {}
+#endif
 
 //gamma 2.4 lookup table used for color correction
 const byte gammaT[] = {

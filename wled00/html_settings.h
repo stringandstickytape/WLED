@@ -1,23 +1,23 @@
 /*
- * Settings html
- */
+   Settings html
+*/
 
 //common CSS of settings pages
 const char PAGE_settingsCss[] PROGMEM = R"=====(<style>body{font-family:Verdana,sans-serif;text-align:center;background:#222;color:#fff;line-height:200%%;margin:0}hr{border-color:#666}button{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.3ch solid #333;display:inline-block;font-size:20px;margin:8px;margin-top:12px}.helpB{text-align:left;position:absolute;width:60px}input{background:#333;color:#fff;font-family:Verdana,sans-serif;border:.5ch solid #333}input[type=number]{width:4em}select{background:#333;color:#fff;font-family:Verdana,sans-serif;border:0.5ch solid #333}td{padding:2px;}</style>)=====";
 
-
 //settings menu
 const char PAGE_settings[] PROGMEM = R"=====(<!DOCTYPE html>
-<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%;margin-top:2.4vh}</style>
+<html><head><title>WLED Settings</title><style>body{text-align:center;background:#222;height:100%%;margin:0}html{--h:11.55vh}button{background:#333;color:#fff;font-family:Verdana,Helvetica,sans-serif;border:.3ch solid #333;display:inline-block;font-size:8vmin;height:var(--h);width:95%%;margin-top:2.4vh}</style>
 <script>function BB(){if(window.frameElement){document.getElementById("b").style.display="none";document.documentElement.style.setProperty("--h","13.86vh")}};</script></head>
 <body onload=BB()>
 <form action=/><button type=submit id=b>Back</button></form>
 <form action=/settings/wifi><button type=submit>WiFi Setup</button></form>
 <form action=/settings/leds><button type=submit>LED Preferences</button></form>
-<form action=/settings/ui><button type=submit>User Interface</button></form>
+<form action=/settings/ui><button type=submit>User Interface</button></form>%DMXMENU%
 <form action=/settings/sync><button type=submit>Sync Interfaces</button></form>
 <form action=/settings/time><button type=submit>Time & Macros</button></form>
 <form action=/settings/sec><button type=submit>Security & Updates</button></form>
+
 </body></html>)=====";
 
 
@@ -62,7 +62,12 @@ AP opens:
 <option value="1">Disconnected</option>
 <option value="2">Always</option>
 <option value="3">Never (not recommended)</option></select><br>
-AP IP: <span class="sip"> Not active </span><hr>
+AP IP: <span class="sip"> Not active </span><br>
+<h3>Experimental</h3>
+Disable WiFi sleep: <input type="checkbox" name="WS"><br>
+<i>Can help with connectivity issues.<br>
+Do not enable if WiFi is working correctly, increases power consumption.</i>
+<hr>
 <button type="button" onclick="B()">Back</button><button type="submit">Save & Connect</button>
 </form>
 </body>
@@ -118,7 +123,15 @@ LED voltage (Max. current for a single LED):<br>
 <br>
 LEDs are 4-channel type (RGBW): <input type=checkbox name=EW onchange=UI() id=rgbw><br>
 <span class=wc>
-Auto-calculate white channel from RGB: <input type=checkbox name=AW><br></span>
+Auto-calculate white channel from RGB:<br>
+<select name=AW>
+<option value=0>None</option>
+<option value=1>Brighter</option>
+<option value=2>Accurate</option>
+<option value=3>Dual</option>
+<option value=4>Legacy</option>
+</select>
+<br></span>
 Color order:
 <select name=CO>
 <option value=0>GRB</option>
@@ -159,6 +172,64 @@ Skip first LED: <input type=checkbox name=SL><hr>
 </form></body></html>)=====";
 
 
+#ifdef WLED_ENABLE_DMX
+//DMX Output settings
+const char PAGE_settings_dmx[] PROGMEM = R"=====(<!DOCTYPE html>
+<html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>DMX Settings</title><script>
+function GCH(num) {
+  d=document;
+  
+  d.getElementById('dmxchannels').innerHTML += "";
+  for (i=0;i<num;i++) {
+    d.getElementById('dmxchannels').innerHTML += "<span id=CH" + (i+1) + "s >Channel " + (i+1) + ": <select name=CH" + (i+1) + " id=\"CH" + (i+1) + "\"><option value=0>Set to 0</option><option value=1>Red</option><option value=2>Green</option><option value=3>Blue</option><option value=4>White</option><option value=5>Shutter (Brightness)</option><option value=6>Set to 255</option></select></span><br />\n";
+  }
+}
+function mMap(){
+  d=document;
+  numCh=document.Sf.CN.value;
+  numGap=document.Sf.CG.value;
+  if (parseInt(numCh)>parseInt(numGap)) {
+    d.getElementById("gapwarning").style.display="block";
+  } else {
+    d.getElementById("gapwarning").style.display="none";
+  }
+  for (i=0;i<15;i++) {
+    if (i>=numCh) {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "0.5";
+      d.getElementById("CH"+(i+1)).disabled = true;
+      
+    } else {
+      d.getElementById("CH"+(i+1) + "s").style.opacity = "1";
+      d.getElementById("CH"+(i+1)).disabled = false;
+    }
+  }
+}
+function S(){GCH(15);GetV();mMap();}function H(){window.open("https://github.com/Aircoookie/WLED/wiki/DMX");}function B(){window.history.back();}function GetV(){var d=document;
+%CSS%%SCSS%</head>
+<body onload="S()">
+<form id="form_s" name="Sf" method="post">
+<div class="helpB"><button type="button" onclick="H()">?</button></div>
+<button type="button" onclick="B()">Back</button><button type="submit">Save</button><hr>
+<h2>Imma firin ma lazer (if it has DMX support)</h2><!-- TODO: Change to something less-meme-related //-->
+
+<i>Number of fixtures is taken from LED config page</i><br>
+
+channels per fixture (15 max): <input type="number" min="1" max="15" name="CN" maxlength="2" onchange="mMap();"><br />
+start channel: <input type="number" min="1" max="512" name="CS" maxlength="2"><br />
+spacing between start channels: <input type="number" min="1" max="512" name="CG" maxlength="2" onchange="mMap();"> [ <a href="javascript:alert('if set to 10, first fixture will start at 10,\nsecond will start at 20 etc.\nRegardless of the channel count.\nMakes memorizing channel numbers easier.');">info</a> ]<br>
+<div id="gapwarning" style="color: orange; display: none;">WARNING: Channel gap is lower than channels per fixture.<br />This will cause overlap.</div>
+<button type="button" onclick="location.href='/dmxmap';">DMX Map</button>
+<h3>channel functions</h3>
+<div id="dmxchannels"></div>
+<hr><button type="button" onclick="B()">Back</button><button type="submit">Save</button>
+</form>
+</body>
+</html>)=====";
+
+#else
+const char PAGE_settings_dmx[] PROGMEM = R"=====()=====";
+#endif
+
 //User Interface settings
 const char PAGE_settings_ui[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>UI Settings</title><script>
@@ -177,6 +248,7 @@ Sync button toggles both send and receive: <input type="checkbox" name="ST"><br>
 </html>)=====";
 
 
+
 //sync settings
 const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <html><head><meta name="viewport" content="width=500"><meta charset="utf-8"><title>Sync Settings</title>
@@ -189,7 +261,16 @@ const char PAGE_settings_sync[] PROGMEM = R"=====(<!DOCTYPE html>
 <h2>Sync setup</h2>
 <h3>Button setup</h3>
 On/Off button enabled: <input type="checkbox" name="BT"><br>
-Infrared receiver type (0 = disabled): <input name="IR" type="number" min="0" max="6" required><br>
+Infrared remote:
+<select name=IR>
+<option value=0>Disabled</option>
+<option value=1>24-key RGB</option>
+<option value=2>24-key with CT</option>
+<option value=3>40-key blue</option>
+<option value=4>44-key RGB</option>
+<option value=5>21-key RGB</option>
+<option value=6>6-key black</option>
+</select><br>
 <a href="https://github.com/Aircoookie/WLED/wiki/Infrared-Control" target="_blank">IR info</a>
 <h3>WLED Broadcast</h3>
 UDP Port: <input name="UP" type="number" min="1" max="65535" required><br>
@@ -207,12 +288,16 @@ Use E1.31 multicast: <input type="checkbox" name="EM"><br>
 E1.31 start universe: <input name="EU" type="number" min="1" max="63999" required><br>
 <i>Reboot required.</i> Check out <a href="https://github.com/ahodges9/LedFx" target="_blank">LedFx</a>!<br>
 DMX start address: <input name="DA" type="number" min="1" max="510" value="1" required><br>
-DMX mode: <input name="DM" type="radio" value="0"> disabled<br>
-<input name="DM" type="radio" value="1"> Single RGB (3 Channels for all LEDs: Red Green Blue)<br>
-<input name="DM" type="radio" value="2"> Single DRGB (4 Channels for all LEDs: Dimmer Red Green Blue)<br>
-<input name="DM" type="radio" value="3"> Effect (11 Channels for properties: Dimmer FX Speed Intensity Palette PriR PriG PriB SecR SecG SecB)<br>
-<input name="DM" type="radio" value="4"> Multiple RGB (3 Channels for each LED: Red Green Blue)<br>
-<input name="DM" type="radio" value="5"> Multiple DRGB (1+3 Channels for each LED: Dimmer R1 G1 B1 R2 G2 B2...)<br><br>
+DMX mode:
+<select name=DM>
+<option value=0>Disabled</option>
+<option value=1>Single RGB</option>
+<option value=2>Single DRGB</option>
+<option value=3>Effect</option>
+<option value=4>Multi RGB</option>
+<option value=5>Multi DRGB</option>
+</select><br>
+<a href="https://github.com/Aircoookie/WLED/wiki/E1.31-DMX" target="_blank">E1.31 info</a><br>
 Timeout: <input name="ET" type="number" min="1" max="65000" required> ms<br>
 Force max brightness: <input type="checkbox" name="FB"><br>
 Disable realtime gamma correction: <input type="checkbox" name="RG"><br>
