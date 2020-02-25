@@ -14,7 +14,7 @@ decode_results results;
 unsigned long irCheckedTime = 0;
 uint32_t lastValidCode = 0;
 uint16_t irTimesRepeated = 0;
-uint8_t lastIR6ColourIdx = 0;
+uint8_t lastIR6ColourIdx = 0, lastIR6PresetIdx = 0;
 
 
 //Add what your custom IR codes should trigger here. Guide: https://github.com/Aircoookie/WLED/wiki/Infrared-Control
@@ -351,7 +351,15 @@ void decodeIR6(uint32_t code)
     case IR6_POWER: toggleOnOff(); break;
     case IR6_CHANNEL_UP: relativeChange(&bri, 10);         break;
     case IR6_CHANNEL_DOWN: relativeChange(&bri, -10, 5);     break;
-    case IR6_VOLUME_UP: /* next effect */ relativeChange(&effectCurrent, 1); break;
+    case IR6_VOLUME_UP: /* next effect */ //relativeChange(&effectCurrent, 1); 
+      if(lastIR6PresetIdx<16) lastIR6PresetIdx++; else lastIR6PresetIdx = 0;
+      
+      if(!applyPreset(lastIR6PresetIdx)) {
+        lastIR6PresetIdx = 1;
+        applyPreset(lastIR6PresetIdx);
+      }
+
+      break;
     case IR6_VOLUME_DOWN: 
     /* next palette */ 
       relativeChange(&effectPalette, 1); 

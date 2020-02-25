@@ -24,7 +24,7 @@
 #define WLED_DISABLE_BLYNK       //saves 6kb
 #define WLED_DISABLE_CRONIXIE    //saves 3kb
 #define WLED_DISABLE_HUESYNC     //saves 4kb
-#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
+//#define WLED_DISABLE_INFRARED    //there is no pin left for this on ESP8266-01, saves 12kb
 #define WLED_ENABLE_MQTT           //saves 12kb
 #define WLED_ENABLE_ADALIGHT       //saves 500b only
 //#define WLED_ENABLE_DMX          //uses 3.5kb
@@ -34,7 +34,7 @@
 //#define WLED_ENABLE_FS_EDITOR    //enable /edit page for editing SPIFFS content. Will also be disabled with OTA lock
 
 //to toggle usb serial debug (un)comment the following line
-#define WLED_DEBUG
+//#define WLED_DEBUG
 
 //library inclusions
 #include <Arduino.h>
