@@ -123,7 +123,7 @@ void prepareResponse(LifxPacket &response, uint16_t packet_type, uint16_t data_s
 }
 
 void sendPacket2(LifxPacket &pkt, uint8_t responseData[], uint16_t data_size, bool finishPacket) {
-  //Serial.print(F("OUT "));
+  ////Serial.print(F("OUT "));
   //printLifxPacket(pkt, responseData);
   Udp.beginPacket(Udp.remoteIP(), 56700); //startUdpSendPacket():
   // Udp.beginPacket(broadcastIp, LifxPort); //BROADCASTS (test sync to multiple clients)
@@ -184,7 +184,7 @@ void userSetup()
   //  zone_count = ledCount / 8 * 8;
   //if(zone_count > 80) zone_count = 80;
 
-  Serial.println("Zone ct = " + String(zone_count));
+  //Serial.println("Zone ct = " + String(zone_count));
   
   // allocate zones and leds
   if (zones) free(zones);
@@ -198,7 +198,7 @@ void userSetup()
   for(uint8_t zone = 0; zone < zone_count; zone++) {
     leds_per_zones[zone] = (ledsRemaining/(zone_count-zone)+0.5);
     ledsRemaining = ledsRemaining - leds_per_zones[zone]; 
-    //Serial.println("Zone " + String(zone) + " = " + String(leds_per_zones[zone]) + " - " + String(ledsRemaining) + " remain...");   
+    ////Serial.println("Zone " + String(zone) + " = " + String(leds_per_zones[zone]) + " - " + String(ledsRemaining) + " remain...");   
   }
 
   for (uint16_t i = 0; i < zone_count; i++) {
@@ -225,7 +225,7 @@ void handleRequest(LifxPacket &request) {
   Udp.read(reqData, request.type == SET_EXTENDED_COLOR_ZONES ? 8 : request.data_size);
   uint8_t responseData[LifxMaximumPacketSize - LifxPacketSize]; //Lifx Payload for response
 
-  //Serial.print("IN  ");
+  ////Serial.print("IN  ");
   //printLifxPacket(request, reqData);
   lifxEeprom eeprom;
   switch (request.type) {
@@ -240,7 +240,7 @@ void handleRequest(LifxPacket &request) {
         }
         else {
       // turn on...
-          Serial.println("SET_POWER_STATE");
+          //Serial.println("SET_POWER_STATE");
           setLight();
           bri = 255;
           prevMode == strip.getMode();
@@ -261,7 +261,7 @@ void handleRequest(LifxPacket &request) {
           if(zones[i].dur == 0) {
             zones[i].dur = 100;
           }
-          //Serial.println("SET_LIGHT_STATE: " + String(zones[i].dur));
+          ////Serial.println("SET_LIGHT_STATE: " + String(zones[i].dur));
         }
         setLight();
       }
@@ -287,7 +287,7 @@ void handleRequest(LifxPacket &request) {
       }
     case /* 0x1F5 (501) */ SET_COLOR_ZONES: {
 
-        //Serial.println("SET_COLOR_ZONES: " + String(word(reqData[11], reqData[10])));
+        ////Serial.println("SET_COLOR_ZONES: " + String(word(reqData[11], reqData[10])));
 
         //    byte apply = request.data[15];  //seems to be buggy?
         uint8_t zonesToSet = reqData[1] - reqData[0] + 1;
@@ -362,9 +362,9 @@ void handleRequest(LifxPacket &request) {
       }
     case /* 0x18 (24) */ SET_BULB_LABEL: {
         eeprom = readEEPROM();
-        for (int i = 0; i < LifxBulbLabelLength; i++) {
-          Serial.println(String(reqData[i], HEX));
-        }
+        //for (int i = 0; i < LifxBulbLabelLength; i++) {
+          //Serial.println(String(reqData[i], HEX));
+        //}
         memcpy(&eeprom.label, &reqData, LifxBulbLabelLength);
         writeEEPROM(eeprom);
       }
@@ -411,11 +411,11 @@ void handleRequest(LifxPacket &request) {
       }
     case /* 510 */ SET_EXTENDED_COLOR_ZONES: {
         uint16_t index = word(reqData[6], reqData[5]);
-        //Serial.println(word(reqData[1],reqData[0]));
+        ////Serial.println(word(reqData[1],reqData[0]));
         //get each HSBK value as stream and put it in the appropriate zone.
         for (i = 0; i < reqData[7] ; i++) {
           Udp.read(zones[index + i].raw, 8);
-          Serial.println("!: "+String(zones[index+i].dur));
+          //Serial.println("!: "+String(zones[index+i].dur));
           if(zones[index+i].dur == 0) zones[index+i].dur = 1000;
         }
         setLight();
@@ -461,11 +461,11 @@ void handleRequest(LifxPacket &request) {
   WiFi.macAddress(mac);
 
         if (request.target[0] == mac[0] || request.target[0] == 0) {
-          Serial.print(F("-> Unknown packet type, ignoring 0x"));
-          Serial.print(request.type, HEX);
-          Serial.print(" (");
-          Serial.print(request.type);
-          Serial.println(")");
+          //Serial.print(F("-> Unknown packet type, ignoring 0x"));
+          //Serial.print(request.type, HEX);
+          //Serial.print(" (");
+          //Serial.print(request.type);
+          //Serial.println(")");
         }
         break;
       }
@@ -476,11 +476,11 @@ void handleRequest(LifxPacket &request) {
 
 void userConnected()
 {
-  Serial.println("4");
+  //Serial.println("4");
 
-  Serial.print("Connected! IP address: ");
-  Serial.println(WiFi.localIP());
-  Serial.printf("UDP server on port %d\n", 56700);
+  //Serial.print("Connected! IP address: ");
+  //Serial.println(WiFi.localIP());
+  //Serial.printf("UDP server on port %d\n", 56700);
   Udp.begin(56700);
 }
 
@@ -490,12 +490,12 @@ void userLoop()
   if (!WLED_CONNECTED) return;
 
   if(prevUserVar0 != userVar0) {
-      Serial.println("userVar0 was changed, new value is "+ userVar0);
+      //Serial.println("userVar0 was changed, new value is "+ userVar0);
       uint16_t newUserVar0 = userVar0;
         lifxEeprom eepromU = readEEPROM();
         eepromU.userVar0 = newUserVar0;
         writeEEPROM(eepromU);
-        Serial.println("... to " + String(eepromU.userVar0));
+        //Serial.println("... to " + String(eepromU.userVar0));
         prevUserVar0 = eepromU.userVar0;
         userVar0 = prevUserVar0;
         userSetup();
@@ -521,7 +521,7 @@ void userLoop()
         if(factor>1) factor = 1;
 
         //if(i==0) {
-          //Serial.println("Duration is " + String(zones[i].dur) + ", millisSince = "  + String(millisSince) + "; factor is " + String(factor));
+          ////Serial.println("Duration is " + String(zones[i].dur) + ", millisSince = "  + String(millisSince) + "; factor is " + String(factor));
         //}
 
         if(zones[i].dur > millisSince)
@@ -551,7 +551,7 @@ void userLoop()
 
           pixel = CHSV(map(target_hue, 0, 360, 0, 255), target_sat, zones[i].bri / 256);
 
-          //Serial.println("Zone " + String(i) + " : " + String(pixel.red) + " - " + String(pixel.Green) + " - " + String(pixel.blue));
+          ////Serial.println("Zone " + String(i) + " : " + String(pixel.red) + " - " + String(pixel.Green) + " - " + String(pixel.blue));
 
           for(pixelCtr = pixelsSoFar; pixelCtr < pixelsSoFar + leds_per_zones[i]; pixelCtr++) {
               CRGB prevPixel = col_to_crgb(strip.getPixelColor(pixelCtr));
@@ -620,15 +620,15 @@ void hsb2rgb(uint16_t hue, uint8_t sat, uint8_t val, uint8_t rgb[]) {
 
 ///////////// EEPROM stuff
 void printLocOrGroup(uint8_t data[]) {
-  for (uint8_t x = 16; x < LifxLocOrGroupSize; x++)
-    Serial.write(data[x]);
+  //for (uint8_t x = 16; x < LifxLocOrGroupSize; x++)
+    //Serial.write(data[x]);
 }
 
 char eeprom_check[] = { 'L', 'I', 'F', 'X' };
 
 lifxEeprom createDefaultEEPROM() {
   lifxEeprom newEeprom;
-  Serial.println(F("Creating new Lifx EEPROM data"));
+  //Serial.println(F("Creating new Lifx EEPROM data"));
       char *myData = "WLEDLocation1234WLED Location                   ";
       memcpy(newEeprom.location, myData , LifxLocOrGroupSize);
             myData = "WLEDGroup1234567WLED Group                      ";
@@ -646,148 +646,56 @@ lifxEeprom readEEPROM() {
   lifxEeprom eeprom;
 
   EEPROM.begin(140 + EEPROM_OFFSET);
-  //Serial.println(F("Restoring bulb settings from EEPROM..:"));
+  ////Serial.println(F("Restoring bulb settings from EEPROM..:"));
   //read 136 bytes from eeprom and push into eeprom struct. (offset 4)
   for (uint8_t x = 0; x < 142; x++) {
     uint8_t b = EEPROM.read(x + EEPROM_OFFSET);
-    //Serial.print(b, HEX);
-    //Serial.print(" ");
+    ////Serial.print(b, HEX);
+    ////Serial.print(" ");
     if (x > 3) //push every byte beyond position 3 in struct
       eeprom.raw[x - 4] = b;
     else if (b != eeprom_check[x]) { //the first 4 bytes must spell LIFX
-      //Serial.println(F("EEPROM does not contain LIFX settings."));
+      ////Serial.println(F("EEPROM does not contain LIFX settings."));
 
       return createDefaultEEPROM();
       break; //if not, exit the loop.
     }
   }
 
-  //Serial.println();
-  //Serial.print(F("Label: "));
-  //Serial.println(eeprom.label);
-  //Serial.print(F("Location: "));
+  ////Serial.println();
+  ////Serial.print(F("Label: "));
+  ////Serial.println(eeprom.label);
+  ////Serial.print(F("Location: "));
   //printLocOrGroup(eeprom.location);
-  //Serial.println();
-  //Serial.print(F("Group: "));
+  ////Serial.println();
+  ////Serial.print(F("Group: "));
   //printLocOrGroup(eeprom.group);
-  //Serial.println();
-  //Serial.print("userVar0: " + String(eeprom.userVar0));
-  //Serial.println();
+  ////Serial.println();
+  ////Serial.print("userVar0: " + String(eeprom.userVar0));
+  ////Serial.println();
   userVar0 = eeprom.userVar0;
   return eeprom;
 }
 
 void writeEEPROM(lifxEeprom eeprom) {
   EEPROM.begin(140 + EEPROM_OFFSET);
-  Serial.println(F("Writing settings to EEPROM..."));
+  //Serial.println(F("Writing settings to EEPROM..."));
   for (uint8_t x = 0; x < 4; x++) {
-    Serial.println(eeprom_check[x]);
+    //Serial.println(eeprom_check[x]);
     (F("Writing settings to EEPROM..."));
     EEPROM.write(x + EEPROM_OFFSET, eeprom_check[x]);
-    Serial.println(EEPROM.read(x + EEPROM_OFFSET));
+    //Serial.println(EEPROM.read(x + EEPROM_OFFSET));
   }
   for (uint8_t x = 4; x < 142; x++) {
     EEPROM.write(x + EEPROM_OFFSET, eeprom.raw[x - 4]);
   }
 
   EEPROM.commit();
-  Serial.println(F("Done!"));
+  //Serial.println(F("Done!"));
 }
 
 
 void printLifxPacket(LifxPacket &request, uint8_t reqData[]) {
-  uint8_t i = 0;
 
-  Serial.print(Udp.remoteIP()); //todo: broadcast or unicast...
-  Serial.print(F(":"));
-  Serial.print(Udp.remotePort()); //todo: will change when implementing decent broadcasts
-
-  Serial.print(F(" Size:"));
-  Serial.print(request.size);
-
-  //    Serial.print(F(" | Proto: "));
-  //    Serial.print(request.protocol);
-
-  //    Serial.print(F(" (0x"));
-  //    Serial.print(request.raw[2], HEX);
-  //    Serial.print(F(" "));
-  //    Serial.print(request.raw[3], HEX);
-  //    Serial.print(F(" "));
-  //Serial.print(F(")"));
-
-  //    Serial.print(F(") | addressable: "));
-  //    Serial.print(request.addressable);
-  //
-  //    Serial.print(F(" | tagged: "));
-  //    Serial.print(request.tagged);
-  //
-  //    Serial.print(F(" | origin: "));
-  //    Serial.print(request.origin);
-
-  Serial.print(F(" | source: 0x"));
-  Serial.print(request.source, HEX);
-
-  Serial.print(F(" | target: 0x"));
-  for (i = 0; i < 8; i++) {
-    Serial.print(request.target[i], HEX);
-    Serial.print(F(" "));
-  }
-/*
-  if((request.target[0] == mac[0] && 
-      request.target[1] == mac[1] &&
-      request.target[2] == mac[2] &&
-      request.target[3] == mac[3] &&
-      request.target[4] == mac[4] &&
-      request.target[5] == mac[5]) ||
-      (request.target[0] ==0 && 
-      request.target[1] == 0 &&
-      request.target[2] == 0 &&
-      request.target[3] == 0 &&
-      request.target[4] == 0 &&
-      request.target[5] == 0)) Serial.print(F(" (me!) "));
-      else Serial.print(F(" (not me!) "));*/
-  //    Serial.print(F(" | reserved1: 0x"));
-  //    for(i = 0; i < 6; i++) {
-  //      Serial.print(request.reserved1[i], HEX);
-  //      Serial.print(F(" "));
-  //    }
-
-  Serial.print(F(" | res_required:"));
-  Serial.print(request.res_required);
-
-  Serial.print(F(" | ack_required:"));
-  Serial.print(request.ack_required);
-
-  //    Serial.print(F(" | reserved2: 0x"));
-  //    Serial.print(request.reserved2, HEX);
-
-  Serial.print(F(" | sequence: 0x"));
-  Serial.print(request.sequence, HEX);
-
-  //    Serial.print(F(" | reserved3: 0x"));
-  //    Serial.print(request2.reserved3, HEX);
-
-  Serial.print(F(" | type: 0x"));
-  Serial.print(request.type, HEX);
-  Serial.print(" (");
-  Serial.print(request.type);
-  Serial.print(")");
-
-  //    Serial.print(F(" | reserved4: 0x"));
-  //    Serial.print(request.reserved4, HEX);
-
-  Serial.print(F(" | data: "));
-  if (request.type == 510 || request.type == 512)
-    Serial.print(F("< Stream >"));
-  else {
-    for (i = 0; i < request.data_size; i++) {
-      Serial.print(reqData[i], HEX);
-      Serial.print(F(" "));
-    }
-  }
-
-  //    Serial.print(F(" | data_size:"));
-  //    Serial.print(request.data_size);
-  Serial.println();
 }
 #endif
