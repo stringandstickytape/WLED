@@ -122,7 +122,7 @@
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002252
+#define VERSION 2002292
 
 char versionString[] = "0.9.1";
 
@@ -392,7 +392,7 @@ bool presetCyclingEnabled = false;
 byte presetCycleMin = 1, presetCycleMax = 5;
 uint16_t presetCycleTime = 1250;
 unsigned long presetCycledTime = 0; byte presetCycCurr = presetCycleMin;
-bool presetApplyBri = false, presetApplyCol = true, presetApplyFx = true;
+bool presetApplyBri = true;
 bool saveCurrPresetCycConf = false;
 
 //realtime
@@ -543,8 +543,6 @@ bool oappendi(int i)
 
 //boot starts here
 void setup() {
-
-
   wledInit();
 }
 
