@@ -7,7 +7,6 @@
  * @author Christian Schwinne
  */
 
-
 //ESP8266-01 (blue) got too little storage space to work with all features of WLED. To use it, you must use ESP8266 Arduino Core v2.4.2 and the setting 512K(No SPIFFS).
 
 //ESP8266-01 (black) has 1MB flash and can thus fit the whole program. Use 1M(64K SPIFFS).
@@ -122,7 +121,7 @@
 #endif
 
 //version code in format yymmddb (b = daily build)
-#define VERSION 2002292
+#define VERSION 2003262
 
 char versionString[] = "0.9.1";
 
@@ -208,12 +207,14 @@ bool receiveDirect    =  true;                //receive UDP realtime
 bool arlsDisableGammaCorrection = true;       //activate if gamma correction is handled by the source
 bool arlsForceMaxBri = false;                 //enable to force max brightness if source has very dark colors that would be black
 
+#define E131_MAX_UNIVERSE_COUNT 9
 uint16_t e131Universe = 1;                    //settings for E1.31 (sACN) protocol (only DMX_MODE_MULTIPLE_* can span over consequtive universes)
 uint8_t  DMXMode = DMX_MODE_MULTIPLE_RGB;     //DMX mode (s.a.)
 uint16_t DMXAddress = 1;                      //DMX start address of fixture, a.k.a. first Channel [for E1.31 (sACN) protocol]
 uint8_t  DMXOldDimmer = 0;                    //only update brightness on change
-uint8_t  e131LastSequenceNumber = 0;          //to detect packet loss
+uint8_t  e131LastSequenceNumber[E131_MAX_UNIVERSE_COUNT];          //to detect packet loss
 bool     e131Multicast = false;               //multicast or unicast
+bool     e131SkipOutOfSequence = false;       //freeze instead of flickering
 
 bool mqttEnabled = false;
 char mqttDeviceTopic[33] = "";                //main MQTT topic (individual per device, default is wled/mac)
@@ -466,8 +467,6 @@ void handleE131Packet(e131_packet_t*, IPAddress);
 void arlsLock(uint32_t,byte);
 void handleOverlayDraw();
 
-#define E131_MAX_UNIVERSE_COUNT 9
-
 //udp interface objects
 WiFiUDP notifierUdp, rgbUdp;
 WiFiUDP ntpUdp;
@@ -554,7 +553,9 @@ void loop() {
   handleSerial();
   handleNotifications();
   handleTransitions();
+#ifdef WLED_ENABLE_DMX
   handleDMX();
+#endif
   userLoop();
 
   yield();

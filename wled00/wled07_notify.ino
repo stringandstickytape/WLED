@@ -88,26 +88,31 @@ void arlsLock(uint32_t timeoutMs, byte md = REALTIME_MODE_GENERIC)
 
 void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
   //E1.31 protocol support
-  
-  // skip out-of-sequence packets
-  if (p->sequence_number < e131LastSequenceNumber && p->sequence_number > 20 && e131LastSequenceNumber < 250){
-    DEBUG_PRINT("skipping E1.31 frame (last seq=");
-    DEBUG_PRINT(e131LastSequenceNumber);
-    DEBUG_PRINT(", current seq=");
-    DEBUG_PRINT(p->sequence_number);
-    DEBUG_PRINTLN(")");
-    return;
-  }
-  e131LastSequenceNumber = p->sequence_number;
 
-  // update status info
-  realtimeIP = clientIP;
-  
   uint16_t uni = htons(p->universe);
   uint8_t previousUniverses = uni - e131Universe;
   uint16_t possibleLEDsInCurrentUniverse;
   uint16_t dmxChannels = htons(p->property_value_count) -1;
 
+  // only listen for universes we're handling & allocated memory
+  if (uni >= (e131Universe + E131_MAX_UNIVERSE_COUNT)) return;
+
+  if (e131SkipOutOfSequence)
+    if (p->sequence_number < e131LastSequenceNumber[uni-e131Universe] && p->sequence_number > 20 && e131LastSequenceNumber[uni-e131Universe] < 250){
+      DEBUG_PRINT("skipping E1.31 frame (last seq=");
+      DEBUG_PRINT(e131LastSequenceNumber[uni-e131Universe]);
+      DEBUG_PRINT(", current seq=");
+      DEBUG_PRINT(p->sequence_number);
+      DEBUG_PRINT(", universe=");
+      DEBUG_PRINT(uni);
+      DEBUG_PRINTLN(")");
+      return;
+    }
+  e131LastSequenceNumber[uni-e131Universe] = p->sequence_number;
+
+  // update status info
+  realtimeIP = clientIP;
+  
   switch (DMXMode) {
     case DMX_MODE_DISABLED:
       return;  // nothing to do
@@ -116,6 +121,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
     case DMX_MODE_SINGLE_RGB:
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 3) return;
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       for (uint16_t i = 0; i < ledCount; i++)
         setRealtimePixel(i, p->property_values[DMXAddress+0], p->property_values[DMXAddress+1], p->property_values[DMXAddress+2], 0);
       break;
@@ -123,6 +129,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
     case DMX_MODE_SINGLE_DRGB:
       if (uni != e131Universe) return;
       if (dmxChannels-DMXAddress+1 < 4) return;
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
         DMXOldDimmer = p->property_values[DMXAddress+0];
         bri = p->property_values[DMXAddress+0];
@@ -161,6 +168,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
 
     case DMX_MODE_MULTIPLE_RGB:
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (previousUniverses == 0) {
         // first universe of this fixture
         possibleLEDsInCurrentUniverse = (dmxChannels - DMXAddress + 1) / 3;
@@ -182,6 +190,7 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
 
     case DMX_MODE_MULTIPLE_DRGB:
+      arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
       if (previousUniverses == 0) {
         // first universe of this fixture
         if (DMXOldDimmer != p->property_values[DMXAddress+0]) {
@@ -213,7 +222,6 @@ void handleE131Packet(e131_packet_t* p, IPAddress clientIP){
       break;
   }
 
-  arlsLock(realtimeTimeoutMs, REALTIME_MODE_E131);
   e131NewData = true;
 }
 

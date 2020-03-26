@@ -138,6 +138,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     notifyTwice = request->hasArg("S2");
 
     receiveDirect = request->hasArg("RD");
+    e131SkipOutOfSequence = request->hasArg("ES");
     e131Multicast = request->hasArg("EM");
     t = request->arg("EU").toInt();
     if (t > 0  && t <= 63999) e131Universe = t;
@@ -216,12 +217,7 @@ void handleSettingsSet(AsyncWebServerRequest *request, byte subPage)
     analogClockSecondsTrail = request->hasArg("OS");
 
     strcpy(cronixieDisplay,request->arg("CX").c_str());
-    bool cbOld = cronixieBacklight;
     cronixieBacklight = request->hasArg("CB");
-    if (cbOld != cronixieBacklight && overlayCurrent == 3)
-    {
-      strip.setCronixieBacklight(cronixieBacklight); overlayRefreshedTime = 0;
-    }
     countdownMode = request->hasArg("CE");
     countdownYear = request->arg("CY").toInt();
     countdownMonth = request->arg("CI").toInt();
@@ -372,6 +368,13 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   DEBUG_PRINT("API req: ");
   DEBUG_PRINTLN(req);
 
+  //write presets and macros saved to flash directly?
+  bool persistSaves = true;
+  pos = req.indexOf("NP");
+  if (pos > 0) {
+    persistSaves = false;
+  }
+
   //save macro, requires &MS=<slot>(<macro>) format
   pos = req.indexOf("&MS=");
   if (pos > 0) {
@@ -381,7 +384,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
       int en = req.indexOf(')');
       String mc = req.substring(pos);
       if (en > 0) mc = req.substring(pos, en);
-      saveMacro(i, mc);
+      saveMacro(i, mc, persistSaves);
     }
 
     pos = req.indexOf("IN");
@@ -461,7 +464,7 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) presetApplyBri = (req.charAt(pos+3) != '0');
 
   pos = req.indexOf("PS="); //saves current in preset
-  if (pos > 0) savePreset(getNumVal(&req, pos));
+  if (pos > 0) savePreset(getNumVal(&req, pos), persistSaves);
 
   //apply preset
   if (updateVal(&req, "PL=", &presetCycCurr, presetCycleMin, presetCycleMax)) {
@@ -648,7 +651,6 @@ bool handleSet(AsyncWebServerRequest *request, const String& req)
   if (pos > 0) //sets backlight
   {
     cronixieBacklight = (req.charAt(pos+3) != '0');
-    if (overlayCurrent == 3) strip.setCronixieBacklight(cronixieBacklight);
     overlayRefreshedTime = 0;
   }
   #endif

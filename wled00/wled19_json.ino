@@ -31,12 +31,14 @@ void deserializeSegment(JsonObject elem, byte it)
         {
           int rgbw[] = {0,0,0,0};
           byte cp = copyArray(colX, rgbw);
-          seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
+          
           if (cp == 1 && rgbw[0] == 0) seg.colors[i] = 0;
-          if (id == strip.getMainSegmentId()) //temporary
+          if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
           { 
             if (i == 0) {col[0] = rgbw[0]; col[1] = rgbw[1]; col[2] = rgbw[2]; col[3] = rgbw[3];}
             if (i == 1) {colSec[0] = rgbw[0]; colSec[1] = rgbw[1]; colSec[2] = rgbw[2]; colSec[3] = rgbw[3];}
+          } else {
+            seg.colors[i] = ((rgbw[3] << 24) | ((rgbw[0]&0xFF) << 16) | ((rgbw[1]&0xFF) << 8) | ((rgbw[2]&0xFF)));
           }
         }
       }
@@ -156,8 +158,11 @@ bool deserializeState(JsonObject root)
 
   colorUpdated(noNotification ? NOTIFIER_CALL_MODE_NO_NOTIFY : NOTIFIER_CALL_MODE_DIRECT_CHANGE);
 
+  //write presets to flash directly?
+  bool persistSaves = !(root["np"] | false);
+
   ps = root["psave"] | -1;
-  if (ps >= 0) savePreset(ps);
+  if (ps >= 0) savePreset(ps, persistSaves);
 
   return stateResponse;
 }
@@ -172,15 +177,24 @@ void serializeSegment(JsonObject& root, WS2812FX::Segment& seg, byte id)
   root["spc"] = seg.spacing;
 
 	JsonArray colarr = root.createNestedArray("col");
-
+  
 	for (uint8_t i = 0; i < 3; i++)
 	{
 		JsonArray colX = colarr.createNestedArray();
-		colX.add((seg.colors[i] >> 16) & 0xFF);
-		colX.add((seg.colors[i] >> 8) & 0xFF);
-		colX.add((seg.colors[i]) & 0xFF);
-		if (useRGBW)
-			colX.add((seg.colors[i] >> 24) & 0xFF);
+    if (id == strip.getMainSegmentId() && i < 2) //temporary, to make transition work on main segment
+    {
+      if (i == 0) {
+        colX.add(col[0]); colX.add(col[1]); colX.add(col[2]); if (useRGBW) colX.add(col[3]); 
+      } else {
+         colX.add(colSec[0]); colX.add(colSec[1]); colX.add(colSec[2]); if (useRGBW) colX.add(colSec[3]); 
+      }
+    } else {
+  		colX.add((seg.colors[i] >> 16) & 0xFF);
+  		colX.add((seg.colors[i] >> 8) & 0xFF);
+  		colX.add((seg.colors[i]) & 0xFF);
+  		if (useRGBW)
+  			colX.add((seg.colors[i] >> 24) & 0xFF);
+    }
 	}
 
 	root["fx"] = seg.mode;
@@ -373,8 +387,8 @@ void serveJson(AsyncWebServerRequest* request)
 
 void serveLiveLeds(AsyncWebServerRequest* request)
 {
-  byte used = ledCount;
-  byte n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
+  uint16_t used = ledCount;
+  uint16_t n = (used -1) /MAX_LIVE_LEDS +1; //only serve every n'th LED if count over MAX_LIVE_LEDS
   char buffer[2000] = "{\"leds\":[";
   olen = 9;
   obuf = buffer;
